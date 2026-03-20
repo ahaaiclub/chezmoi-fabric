@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 - Chez Moi</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #6B4C8A;
+  --primary-light: #9B7DB8;
+  --primary-dark: #4A2D6B;
+  --accent: #D4A574;
+  --bg: #FAF6F1;
+  --bg-card: #FFFFFF;
+  --text: #3D2C2C;
+  --text-light: #8B7676;
+  --text-muted: #B5A3A3;
+  --border: #E8DDD4;
+  --success: #4C8A57;
+  --danger: #C0392B;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+/* Login */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.login-box {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 48px 32px;
+  border: 1px solid var(--border);
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+}
+.login-box h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 28px;
+  color: var(--primary-dark);
+  margin-bottom: 4px;
+}
+.login-box .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+.login-box input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+}
+.login-box input:focus { border-color: var(--primary); }
+.login-box .error { color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none; }
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  width: 100%;
+  padding: 12px;
+}
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-light);
+}
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #a93226; }
+.btn-success { background: var(--success); color: #fff; }
+
+/* Admin Layout */
+.admin-page { display: none; }
+.admin-header {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+  padding: 16px 24px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.admin-header h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+.admin-header .admin-actions { display: flex; gap: 8px; align-items: center; }
+.admin-header .btn-outline { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
+.admin-header .btn-outline:hover { border-color: #fff; color: #fff; }
+
+.admin-body { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.toolbar h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  color: var(--primary-dark);
+}
+.toolbar-actions { display: flex; gap: 8px; }
+
+/* Fabric Table */
+.fabric-table {
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.fabric-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fabric-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(107,76,138,0.03);
+}
+.fabric-table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.fabric-table tr:last-child td { border-bottom: none; }
+.fabric-table tr:hover td { background: rgba(107,76,138,0.02); }
+.fabric-table .thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: rgba(255,255,255,0.5);
+}
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.status-badge.in-stock { background: rgba(76,138,87,0.1); color: var(--success); }
+.status-badge.low { background: rgba(200,140,50,0.1); color: #b08030; }
+.row-actions { display: flex; gap: 6px; }
+
+/* Modal / Form */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  overflow-y: auto;
+  padding: 24px;
+}
+.modal-overlay.active { display: flex; justify-content: center; align-items: flex-start; }
+.modal {
+  background: var(--bg);
+  border-radius: 16px;
+  max-width: 700px;
+  width: 100%;
+  margin: 24px auto;
+}
+.modal-header {
+  background: var(--bg-card);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  color: var(--primary-dark);
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.modal-body { padding: 24px; }
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg-card);
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--primary);
+}
+.form-group textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+/* Tags Input */
+.tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  min-height: 42px;
+  cursor: text;
+}
+.tags-input:focus-within { border-color: var(--primary); }
+.tags-input .tag-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(107,76,138,0.1);
+  color: var(--primary);
+  border-radius: 10px;
+  font-size: 12px;
+}
+.tags-input .tag-item .remove {
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+}
+.tags-input .tag-item .remove:hover { opacity: 1; }
+.tags-input input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: inherit;
+  flex: 1;
+  min-width: 80px;
+  padding: 2px 4px;
+  background: transparent;
+}
+
+/* Image Upload */
+.image-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-card);
+}
+.image-upload-area:hover { border-color: var(--primary-light); background: rgba(107,76,138,0.02); }
+.image-upload-area .upload-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+.image-upload-area p { font-size: 13px; color: var(--text-muted); }
+.image-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.image-preview-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.image-preview-item .remove-img {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-preview-item .drag-handle {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--bg-card);
+  border-radius: 0 0 16px 16px;
+}
+
+/* QR Modal */
+.qr-modal-content {
+  text-align: center;
+  padding: 24px;
+}
+.qr-modal-content h4 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  color: var(--primary-dark);
+  margin-bottom: 4px;
+}
+.qr-modal-content .qr-id { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+.qr-container {
+  display: inline-block;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.qr-download-btn { margin-top: 12px; }
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #fff;
+  animation: slideIn 0.3s ease;
+  max-width: 320px;
+}
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--primary); }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-muted);
+}
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.three { grid-template-columns: 1fr; }
+  .fabric-table { overflow-x: auto; }
+  .fabric-table table { min-width: 700px; }
+  .admin-body { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Login Page -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <h1>Chez Moi</h1>
+    <div class="sub">管理后台</div>
+    <input type="password" id="passwordInput" placeholder="请输入管理密码" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="error" id="loginError">密码错误，请重试</div>
+    <button class="btn btn-primary" onclick="doLogin()">登 录</button>
+  </div>
+</div>
+
+<!-- Admin Page -->
+<div class="admin-page" id="adminPage">
+  <!-- Header -->
+  <div class="admin-header">
+    <h1>Chez Moi 管理</h1>
+    <div class="admin-actions">
+      <a href="index.html" class="btn btn-sm btn-outline" target="_blank">查看主站</a>
+      <button class="btn btn-sm btn-outline" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="admin-body">
+    <div class="toolbar">
+      <h2>布料管理</h2>
+      <div class="toolbar-actions">
+        <button class="btn btn-sm btn-outline" onclick="exportAllQR()">批量导出二维码</button>
+        <button class="btn btn-sm btn-primary" onclick="openAddModal()">+ 添加布料</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="fabric-table">
+      <div class="loading" id="tableLoading">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+      <table id="fabricTable" style="display:none">
+        <thead>
+          <tr>
+            <th>图片</th>
+            <th>编号</th>
+            <th>名称</th>
+            <th>产地</th>
+            <th>材质</th>
+            <th>纹样</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="fabricTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Fabric Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="editModalTitle">添加布料</h3>
+      <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>布料编号</label>
+          <input type="text" id="editCode" placeholder="自动生成" readonly>
+        </div>
+        <div class="form-group">
+          <label>布料名称 *</label>
+          <input type="text" id="editName" placeholder="如：靛蓝方格纹">
+        </div>
+      </div>
+
+      <div class="form-row three">
+        <div class="form-group">
+          <label>产地</label>
+          <input type="text" id="editOrigin" placeholder="如：山东菏泽">
+        </div>
+        <div class="form-group">
+          <label>产地故事</label>
+          <input type="text" id="editOriginStory" placeholder="如：非遗传承人手织">
+        </div>
+        <div class="form-group">
+          <label>材质</label>
+          <select id="editMaterial">
+            <option value="纯棉">纯棉</option>
+            <option value="棉麻混纺">棉麻混纺</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row three">
+        <div class="form-group">
+          <label>纹样</label>
+          <input type="text" id="editPattern" placeholder="如：方格">
+        </div>
+        <div class="form-group">
+          <label>染色</label>
+          <input type="text" id="editDyeing" placeholder="如：植物染·靛蓝">
+        </div>
+        <div class="form-group">
+          <label>幅宽</label>
+          <input type="text" id="editWidth" placeholder="如：42cm">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>厚度</label>
+          <input type="text" id="editThickness" placeholder="如：中等偏厚">
+        </div>
+        <div class="form-group">
+          <label>状态</label>
+          <select id="editStatus">
+            <option value="有货">有货</option>
+            <option value="少量">少量</option>
+            <option value="缺货">缺货</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>颜色标签（回车添加）</label>
+        <div class="tags-input" id="colorsInput" onclick="this.querySelector('input').focus()">
+          <input type="text" placeholder="输入颜色后回车" onkeydown="handleTagInput(event, 'colors')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>适合用途（回车添加）</label>
+        <div class="tags-input" id="usesInput" onclick="this.querySelector('input').focus()">
+          <input type="text" placeholder="输入用途后回车" onkeydown="handleTagInput(event, 'uses')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>布的故事</label>
+        <textarea id="editStory" rows="4" placeholder="讲述这块布的故事..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>洗护建议</label>
+        <textarea id="editCare" rows="3" placeholder="洗护和保养建议..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>布料图片</label>
+        <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
+          <div class="upload-icon">📷</div>
+          <p>点击上传图片（支持多张）</p>
+        </div>
+        <input type="file" id="imageFileInput" multiple accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+        <div class="image-previews" id="imagePreviews"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm btn-outline" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-sm btn-primary" id="saveBtn" onclick="saveFabric()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3>布料二维码</h3>
+      <button class="modal-close" onclick="closeQRModal()">&times;</button>
+    </div>
+    <div class="qr-modal-content">
+      <h4 id="qrFabricName"></h4>
+      <div class="qr-id" id="qrFabricId"></div>
+      <div class="qr-container" id="qrCodeContainer"></div>
+      <br>
+      <button class="btn btn-sm btn-primary qr-download-btn" onclick="downloadQR()">下载二维码 PNG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Supabase Config =====
+const SUPABASE_URL = 'https://lyhascowufbhfkifbavb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5aGFzY293dWZiaGZraWZiYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTA1NjEsImV4cCI6MjA4OTU4NjU2MX0.eDHsNYkeTx5fO01ncMZQk7MN-_FUdvebjSEQeeeuaKo';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const ADMIN_PASSWORD = 'tangzihan';
+const SITE_BASE_URL = window.location.origin;
+
+// ===== State =====
+let fabricsList = [];
+let editingImages = []; // { url, file?, isNew }
+let editTagsColors = [];
+let editTagsUses = [];
+let currentQRFabric = null;
+
+// ===== Auth =====
+function doLogin() {
+  const pwd = document.getElementById('passwordInput').value;
+  if (pwd === ADMIN_PASSWORD) {
+    sessionStorage.setItem('admin_auth', '1');
+    showAdmin();
+  } else {
+    const err = document.getElementById('loginError');
+    err.style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('admin_auth');
+  document.getElementById('adminPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('passwordInput').value = '';
+}
+
+function showAdmin() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminPage').style.display = 'block';
+  loadFabrics();
+}
+
+// Check session on load
+if (sessionStorage.getItem('admin_auth') === '1') {
+  showAdmin();
+}
+
+// ===== Toast =====
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ===== Load Fabrics =====
+async function loadFabrics() {
+  try {
+    const { data, error } = await supabase
+      .from('fabrics')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) throw error;
+    fabricsList = data || [];
+    renderTable();
+  } catch (e) {
+    console.error('Load error:', e);
+    showToast('加载失败: ' + e.message, 'error');
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('fabricTableBody');
+  document.getElementById('tableLoading').style.display = 'none';
+  document.getElementById('fabricTable').style.display = 'table';
+
+  if (fabricsList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted);">暂无布料数据，点击"添加布料"开始</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = fabricsList.map(f => {
+    const thumbUrl = f.images && f.images.length > 0 ? f.images[0] : null;
+    const thumbHtml = thumbUrl
+      ? `<img class="thumb" src="${thumbUrl}" alt="${f.name}">`
+      : `<div class="thumb" style="background:${f.placeholder_gradient || 'var(--border)'}">🧵</div>`;
+    const statusClass = f.status === '有货' ? 'in-stock' : 'low';
+    return `<tr>
+      <td>${thumbHtml}</td>
+      <td><strong>${f.id}</strong></td>
+      <td>${f.name}</td>
+      <td>${f.origin || '-'}</td>
+      <td>${f.material || '-'}</td>
+      <td>${f.pattern || '-'}</td>
+      <td><span class="status-badge ${statusClass}">● ${f.status || '有货'}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-outline" onclick="showQR('${f.id}')">二维码</button>
+          <button class="btn btn-sm btn-outline" onclick="openEditModal('${f.id}')">编辑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteFabric('${f.id}')">删除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== Auto-generate ID =====
+function getNextId() {
+  if (fabricsList.length === 0) return 'BL-001';
+  const nums = fabricsList.map(f => {
+    const m = f.id.match(/BL-(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+  });
+  const max = Math.max(...nums);
+  return 'BL-' + String(max + 1).padStart(3, '0');
+}
+
+// ===== Tag Input =====
+function handleTagInput(event, field) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const input = event.target;
+  const value = input.value.trim();
+  if (!value) return;
+
+  const arr = field === 'colors' ? editTagsColors : editTagsUses;
+  if (!arr.includes(value)) {
+    arr.push(value);
+    renderTags(field);
+  }
+  input.value = '';
+}
+
+function removeTag(field, index) {
+  const arr = field === 'colors' ? editTagsColors : editTagsUses;
+  arr.splice(index, 1);
+  renderTags(field);
+}
+
+function renderTags(field) {
+  const arr = field === 'colors' ? editTagsColors : editTagsUses;
+  const container = document.getElementById(field === 'colors' ? 'colorsInput' : 'usesInput');
+  const input = container.querySelector('input');
+  // Remove existing tag items
+  container.querySelectorAll('.tag-item').forEach(el => el.remove());
+  // Add tags before input
+  arr.forEach((tag, i) => {
+    const el = document.createElement('span');
+    el.className = 'tag-item';
+    el.innerHTML = `${tag} <span class="remove" onclick="removeTag('${field}', ${i})">&times;</span>`;
+    container.insertBefore(el, input);
+  });
+}
+
+// ===== Image Upload =====
+async function handleImageUpload(event) {
+  const files = Array.from(event.target.files);
+  for (const file of files) {
+    const url = URL.createObjectURL(file);
+    editingImages.push({ url, file, isNew: true });
+  }
+  renderImagePreviews();
+  event.target.value = '';
+}
+
+function removeImage(index) {
+  editingImages.splice(index, 1);
+  renderImagePreviews();
+}
+
+function renderImagePreviews() {
+  const container = document.getElementById('imagePreviews');
+  container.innerHTML = editingImages.map((img, i) => `
+    <div class="image-preview-item" draggable="true" data-index="${i}"
+         ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dropImage(event)">
+      <img src="${img.url}" alt="Preview ${i+1}">
+      <button class="remove-img" onclick="removeImage(${i})">&times;</button>
+      <div class="drag-handle">⠿</div>
+    </div>
+  `).join('');
+}
+
+// Drag & drop reorder
+let dragIndex = null;
+function dragStart(e) {
+  dragIndex = parseInt(e.currentTarget.dataset.index);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e) { e.preventDefault(); }
+function dropImage(e) {
+  e.preventDefault();
+  const dropIndex = parseInt(e.currentTarget.dataset.index);
+  if (dragIndex === null || dragIndex === dropIndex) return;
+  const item = editingImages.splice(dragIndex, 1)[0];
+  editingImages.splice(dropIndex, 0, item);
+  dragIndex = null;
+  renderImagePreviews();
+}
+
+// Upload images to Supabase Storage
+async function uploadImages(fabricId) {
+  const urls = [];
+  for (let i = 0; i < editingImages.length; i++) {
+    const img = editingImages[i];
+    if (img.isNew && img.file) {
+      const ext = img.file.name.split('.').pop();
+      const path = `${fabricId}/${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage
+        .from('fabric-images')
+        .upload(path, img.file, { upsert: true });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage
+        .from('fabric-images')
+        .getPublicUrl(path);
+      urls.push(urlData.publicUrl);
+    } else {
+      urls.push(img.url);
+    }
+  }
+  return urls;
+}
+
+// ===== Add / Edit Modal =====
+function openAddModal() {
+  document.getElementById('editModalTitle').textContent = '添加布料';
+  document.getElementById('editId').value = '';
+  document.getElementById('editCode').value = getNextId();
+  document.getElementById('editName').value = '';
+  document.getElementById('editOrigin').value = '';
+  document.getElementById('editOriginStory').value = '';
+  document.getElementById('editMaterial').value = '纯棉';
+  document.getElementById('editPattern').value = '';
+  document.getElementById('editDyeing').value = '';
+  document.getElementById('editWidth').value = '';
+  document.getElementById('editThickness').value = '';
+  document.getElementById('editStatus').value = '有货';
+  document.getElementById('editStory').value = '';
+  document.getElementById('editCare').value = '';
+  editTagsColors = [];
+  editTagsUses = [];
+  editingImages = [];
+  renderTags('colors');
+  renderTags('uses');
+  renderImagePreviews();
+  document.getElementById('editModal').classList.add('active');
+}
+
+function openEditModal(id) {
+  const fabric = fabricsList.find(f => f.id === id);
+  if (!fabric) return;
+  document.getElementById('editModalTitle').textContent = '编辑布料';
+  document.getElementById('editId').value = fabric.id;
+  document.getElementById('editCode').value = fabric.id;
+  document.getElementById('editName').value = fabric.name || '';
+  document.getElementById('editOrigin').value = fabric.origin || '';
+  document.getElementById('editOriginStory').value = fabric.origin_story || '';
+  document.getElementById('editMaterial').value = fabric.material || '纯棉';
+  document.getElementById('editPattern').value = fabric.pattern || '';
+  document.getElementById('editDyeing').value = fabric.dyeing || '';
+  document.getElementById('editWidth').value = fabric.width || '';
+  document.getElementById('editThickness').value = fabric.thickness || '';
+  document.getElementById('editStatus').value = fabric.status || '有货';
+  document.getElementById('editStory').value = fabric.story || '';
+  document.getElementById('editCare').value = fabric.care || '';
+  editTagsColors = [...(fabric.colors || [])];
+  editTagsUses = [...(fabric.uses || [])];
+  editingImages = (fabric.images || []).map(url => ({ url, isNew: false }));
+  renderTags('colors');
+  renderTags('uses');
+  renderImagePreviews();
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+
+async function saveFabric() {
+  const name = document.getElementById('editName').value.trim();
+  if (!name) { showToast('请输入布料名称', 'error'); return; }
+
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '保存中...';
+
+  try {
+    const id = document.getElementById('editId').value || document.getElementById('editCode').value;
+    const imageUrls = await uploadImages(id);
+
+    const record = {
+      id: id,
+      name: name,
+      origin: document.getElementById('editOrigin').value.trim(),
+      origin_story: document.getElementById('editOriginStory').value.trim(),
+      material: document.getElementById('editMaterial').value,
+      pattern: document.getElementById('editPattern').value.trim(),
+      dyeing: document.getElementById('editDyeing').value.trim(),
+      width: document.getElementById('editWidth').value.trim(),
+      thickness: document.getElementById('editThickness').value.trim(),
+      status: document.getElementById('editStatus').value,
+      colors: editTagsColors,
+      uses: editTagsUses,
+      images: imageUrls,
+      story: document.getElementById('editStory').value.trim(),
+      care: document.getElementById('editCare').value.trim(),
+    };
+
+    const isEdit = document.getElementById('editId').value !== '';
+
+    if (isEdit) {
+      const { error } = await supabase.from('fabrics').update(record).eq('id', id);
+      if (error) throw error;
+      showToast('布料已更新', 'success');
+    } else {
+      const { error } = await supabase.from('fabrics').insert(record);
+      if (error) throw error;
+      showToast('布料已添加', 'success');
+    }
+
+    closeEditModal();
+    await loadFabrics();
+  } catch (e) {
+    console.error('Save error:', e);
+    showToast('保存失败: ' + e.message, 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '保存';
+  }
+}
+
+// ===== Delete =====
+async function deleteFabric(id) {
+  if (!confirm(`确定要删除布料 ${id} 吗？`)) return;
+  try {
+    const { error } = await supabase.from('fabrics').delete().eq('id', id);
+    if (error) throw error;
+    showToast('已删除', 'success');
+    await loadFabrics();
+  } catch (e) {
+    showToast('删除失败: ' + e.message, 'error');
+  }
+}
+
+// ===== QR Code =====
+function showQR(id) {
+  const fabric = fabricsList.find(f => f.id === id);
+  if (!fabric) return;
+  currentQRFabric = fabric;
+
+  document.getElementById('qrFabricName').textContent = fabric.name;
+  document.getElementById('qrFabricId').textContent = fabric.id;
+
+  const container = document.getElementById('qrCodeContainer');
+  container.innerHTML = '';
+
+  const url = `${SITE_BASE_URL}/fabric?id=${fabric.id}`;
+  new QRCode(container, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#3D2C2C',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById('qrModal').classList.add('active');
+}
+
+function closeQRModal() {
+  document.getElementById('qrModal').classList.remove('active');
+  currentQRFabric = null;
+}
+
+function downloadQR() {
+  if (!currentQRFabric) return;
+  const canvas = document.querySelector('#qrCodeContainer canvas');
+  if (!canvas) return;
+
+  // Create a new canvas with label
+  const labelCanvas = document.createElement('canvas');
+  const padding = 40;
+  const textHeight = 60;
+  labelCanvas.width = canvas.width + padding * 2;
+  labelCanvas.height = canvas.height + padding * 2 + textHeight;
+  const ctx = labelCanvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
+
+  // QR code
+  ctx.drawImage(canvas, padding, padding);
+
+  // Text
+  ctx.fillStyle = '#3D2C2C';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(currentQRFabric.name, labelCanvas.width / 2, canvas.height + padding + 28);
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#8B7676';
+  ctx.fillText(currentQRFabric.id, labelCanvas.width / 2, canvas.height + padding + 48);
+
+  const link = document.createElement('a');
+  link.download = `QR-${currentQRFabric.id}-${currentQRFabric.name}.png`;
+  link.href = labelCanvas.toDataURL('image/png');
+  link.click();
+}
+
+// ===== Batch QR Export =====
+async function exportAllQR() {
+  if (fabricsList.length === 0) {
+    showToast('没有布料数据', 'error');
+    return;
+  }
+
+  showToast('正在生成二维码...', 'info');
+
+  // Generate each QR and download individually (no zip library needed)
+  for (const fabric of fabricsList) {
+    const tempDiv = document.createElement('div');
+    tempDiv.style.display = 'none';
+    document.body.appendChild(tempDiv);
+
+    const url = `${SITE_BASE_URL}/fabric?id=${fabric.id}`;
+    new QRCode(tempDiv, {
+      text: url,
+      width: 200,
+      height: 200,
+      colorDark: '#3D2C2C',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Wait for QR to render
+    await new Promise(r => setTimeout(r, 100));
+
+    const canvas = tempDiv.querySelector('canvas');
+    if (canvas) {
+      const labelCanvas = document.createElement('canvas');
+      const padding = 40;
+      const textHeight = 60;
+      labelCanvas.width = canvas.width + padding * 2;
+      labelCanvas.height = canvas.height + padding * 2 + textHeight;
+      const ctx = labelCanvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
+      ctx.drawImage(canvas, padding, padding);
+      ctx.fillStyle = '#3D2C2C';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(fabric.name, labelCanvas.width / 2, canvas.height + padding + 28);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#8B7676';
+      ctx.fillText(fabric.id, labelCanvas.width / 2, canvas.height + padding + 48);
+
+      const link = document.createElement('a');
+      link.download = `QR-${fabric.id}-${fabric.name}.png`;
+      link.href = labelCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    tempDiv.remove();
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  showToast(`已导出 ${fabricsList.length} 个二维码`, 'success');
+}
+</script>
+</body>
+</html>

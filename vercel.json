@@ -15,5 +15,9 @@
         { "key": "Content-Type", "value": "application/json; charset=utf-8" }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/seed", "destination": "/seed.html" }
   ]
 }

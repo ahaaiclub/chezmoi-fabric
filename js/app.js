@@ -1,5 +1,8 @@
 // Chez Moi - Fabric Library App
 
+const SUPABASE_URL = 'https://lyhascowufbhfkifbavb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5aGFzY293dWZiaGZraWZiYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTA1NjEsImV4cCI6MjA4OTU4NjU2MX0.eDHsNYkeTx5fO01ncMZQk7MN-_FUdvebjSEQeeeuaKo';
+
 const USE_ICONS = {
   '衣物': '👘', '包袋': '👜', '桌布盖布': '🏠', '布艺玩偶': '🧸',
   '围巾披肩': '🧣', '家居软装': '🛋️', '手工拼布': '🧵', '茶席': '🍵',
@@ -7,9 +10,54 @@ const USE_ICONS = {
   '桌旗': '🎋', '布艺装饰': '✂️', '拼布创作': '🧩'
 };
 
+// Load Supabase JS dynamically (only when needed)
+let _supabaseClient = null;
+function getSupabaseClient() {
+  if (_supabaseClient) return _supabaseClient;
+  if (window.supabase) {
+    _supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return _supabaseClient;
+}
+
+// Load fabrics: try Supabase REST API first, fallback to static JSON
 async function loadFabrics() {
-  const resp = await fetch('data/fabrics.json');
-  return resp.json();
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/fabrics?select=*&order=id.asc`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!resp.ok) throw new Error('Supabase API error');
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      // Map snake_case fields to camelCase for compatibility
+      return data.map(f => ({
+        id: f.id,
+        name: f.name,
+        origin: f.origin,
+        originStory: f.origin_story,
+        material: f.material,
+        pattern: f.pattern,
+        dyeing: f.dyeing,
+        width: f.width,
+        thickness: f.thickness,
+        colors: f.colors || [],
+        images: f.images || [],
+        story: f.story,
+        uses: f.uses || [],
+        care: f.care,
+        status: f.status,
+        placeholderGradient: f.placeholder_gradient || 'linear-gradient(135deg, #ccc, #eee)'
+      }));
+    }
+    throw new Error('No data from Supabase');
+  } catch (e) {
+    console.log('Supabase unavailable, falling back to local JSON:', e.message);
+    const resp = await fetch('data/fabrics.json');
+    return resp.json();
+  }
 }
 
 // ===== Detail Page =====
@@ -67,20 +115,32 @@ async function initDetailPage() {
 function renderGallery(fabric) {
   const track = document.getElementById('galleryTrack');
   const dotsEl = document.getElementById('galleryDots');
-  const count = fabric.images.length;
+  const images = fabric.images || [];
+  const count = images.length || 1;
+
+  // Check if images are real URLs (from Supabase storage)
+  const hasRealImages = images.length > 0 && images[0].startsWith('http');
 
   // Render slides
-  track.innerHTML = fabric.images.map((img, i) => `
-    <div class="gallery-slide">
-      <div class="img-placeholder" style="background: ${fabric.placeholderGradient}">
-        <div class="weave-pattern">⬚⬚⬚<br>⬚⬚⬚<br>⬚⬚⬚</div>
-        布料实拍图 ${i + 1}
+  if (hasRealImages) {
+    track.innerHTML = images.map((img, i) => `
+      <div class="gallery-slide">
+        <img src="${img}" alt="${fabric.name} - 图片 ${i + 1}" onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\' style=\\'background:${fabric.placeholderGradient}\\'><div class=\\'weave-pattern\\'>⬚⬚⬚<br>⬚⬚⬚<br>⬚⬚⬚</div>布料实拍图 ${i + 1}</div>'">
       </div>
-    </div>
-  `).join('');
+    `).join('');
+  } else {
+    track.innerHTML = images.map((img, i) => `
+      <div class="gallery-slide">
+        <div class="img-placeholder" style="background: ${fabric.placeholderGradient}">
+          <div class="weave-pattern">⬚⬚⬚<br>⬚⬚⬚<br>⬚⬚⬚</div>
+          布料实拍图 ${i + 1}
+        </div>
+      </div>
+    `).join('');
+  }
 
   // Render dots
-  dotsEl.innerHTML = fabric.images.map((_, i) =>
+  dotsEl.innerHTML = images.map((_, i) =>
     `<span${i === 0 ? ' class="active"' : ''} data-index="${i}"></span>`
   ).join('');
 
@@ -149,13 +209,14 @@ function renderGrid(fabrics) {
     return;
   }
 
-  grid.innerHTML = fabrics.map((f, i) => `
-    <div class="fabric-card" onclick="location.href='fabric.html?id=${f.id}'" style="animation-delay: ${i * 0.05}s">
-      <div class="card-image">
-        <div class="card-placeholder" style="background: ${f.placeholderGradient}">
-          ⬚⬚<br>⬚⬚
-        </div>
-      </div>
+  grid.innerHTML = fabrics.map((f, i) => {
+    const hasRealImage = f.images && f.images.length > 0 && f.images[0].startsWith('http');
+    const imageHtml = hasRealImage
+      ? `<img src="${f.images[0]}" alt="${f.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<div class=\\'card-placeholder\\' style=\\'background:${f.placeholderGradient}\\'>⬚⬚<br>⬚⬚</div>'">`
+      : `<div class="card-placeholder" style="background: ${f.placeholderGradient}">⬚⬚<br>⬚⬚</div>`;
+
+    return `<div class="fabric-card" onclick="location.href='fabric.html?id=${f.id}'" style="animation-delay: ${i * 0.05}s">
+      <div class="card-image">${imageHtml}</div>
       <div class="card-info">
         <div class="card-name">${f.name}</div>
         <div class="card-tags">
@@ -164,8 +225,8 @@ function renderGrid(fabrics) {
         </div>
         <div class="card-origin">${f.origin} · ${f.originStory}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function setupFilters() {

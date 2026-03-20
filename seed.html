@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据导入 - Chez Moi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body {
+  font-family: -apple-system, sans-serif;
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #FAF6F1;
+  color: #3D2C2C;
+}
+h1 { color: #4A2D6B; margin-bottom: 8px; }
+.sub { color: #8B7676; margin-bottom: 24px; }
+button {
+  padding: 12px 24px;
+  background: #6B4C8A;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+button:hover { background: #4A2D6B; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+#log {
+  background: #fff;
+  border: 1px solid #E8DDD4;
+  border-radius: 12px;
+  padding: 16px;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.8;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.ok { color: #4C8A57; }
+.err { color: #C0392B; }
+</style>
+</head>
+<body>
+<h1>Chez Moi 数据导入</h1>
+<p class="sub">将 data/fabrics.json 中的示例数据导入到 Supabase</p>
+<button id="seedBtn" onclick="runSeed()">开始导入</button>
+<div id="log"></div>
+
+<script>
+const SUPABASE_URL = 'https://lyhascowufbhfkifbavb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5aGFzY293dWZiaGZraWZiYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTA1NjEsImV4cCI6MjA4OTU4NjU2MX0.eDHsNYkeTx5fO01ncMZQk7MN-_FUdvebjSEQeeeuaKo';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const logEl = document.getElementById('log');
+function log(msg, cls) {
+  const span = document.createElement('span');
+  span.className = cls || '';
+  span.textContent = msg + '\n';
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function runSeed() {
+  const btn = document.getElementById('seedBtn');
+  btn.disabled = true;
+  logEl.innerHTML = '';
+
+  try {
+    log('正在读取 data/fabrics.json ...');
+    const resp = await fetch('data/fabrics.json');
+    const fabrics = await resp.json();
+    log(`读取到 ${fabrics.length} 条布料数据`, 'ok');
+
+    for (const f of fabrics) {
+      const record = {
+        id: f.id,
+        name: f.name,
+        origin: f.origin,
+        origin_story: f.originStory,
+        material: f.material,
+        pattern: f.pattern,
+        dyeing: f.dyeing,
+        width: f.width,
+        thickness: f.thickness,
+        colors: f.colors,
+        images: f.images,
+        story: f.story,
+        uses: f.uses,
+        care: f.care,
+        status: f.status,
+        placeholder_gradient: f.placeholderGradient
+      };
+
+      log(`正在导入 ${f.id} - ${f.name} ...`);
+      const { error } = await sb.from('fabrics').upsert(record, { onConflict: 'id' });
+      if (error) {
+        log(`  失败: ${error.message}`, 'err');
+      } else {
+        log(`  成功`, 'ok');
+      }
+    }
+
+    log('\n全部完成！', 'ok');
+  } catch (e) {
+    log(`导入出错: ${e.message}`, 'err');
+    log('请确认已在 Supabase Dashboard 中执行了 setup.sql', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
