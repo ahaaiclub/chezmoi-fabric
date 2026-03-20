@@ -706,7 +706,7 @@ function showToast(message, type = 'info') {
 // ===== Load Fabrics =====
 async function loadFabrics() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('fabrics')
       .select('*')
       .order('id', { ascending: true });
