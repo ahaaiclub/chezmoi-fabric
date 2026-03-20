@@ -649,7 +649,7 @@ a { color: inherit; text-decoration: none; }
 // ===== Supabase Config =====
 const SUPABASE_URL = 'https://lyhascowufbhfkifbavb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5aGFzY293dWZiaGZraWZiYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMTA1NjEsImV4cCI6MjA4OTU4NjU2MX0.eDHsNYkeTx5fO01ncMZQk7MN-_FUdvebjSEQeeeuaKo';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const ADMIN_PASSWORD = 'tangzihan';
 const SITE_BASE_URL = window.location.origin;
@@ -856,11 +856,11 @@ async function uploadImages(fabricId) {
     if (img.isNew && img.file) {
       const ext = img.file.name.split('.').pop();
       const path = `${fabricId}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage
+      const { error } = await supabaseClient.storage
         .from('fabric-images')
         .upload(path, img.file, { upsert: true });
       if (error) throw error;
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = supabaseClient.storage
         .from('fabric-images')
         .getPublicUrl(path);
       urls.push(urlData.publicUrl);
@@ -959,11 +959,11 @@ async function saveFabric() {
     const isEdit = document.getElementById('editId').value !== '';
 
     if (isEdit) {
-      const { error } = await supabase.from('fabrics').update(record).eq('id', id);
+      const { error } = await supabaseClient.from('fabrics').update(record).eq('id', id);
       if (error) throw error;
       showToast('布料已更新', 'success');
     } else {
-      const { error } = await supabase.from('fabrics').insert(record);
+      const { error } = await supabaseClient.from('fabrics').insert(record);
       if (error) throw error;
       showToast('布料已添加', 'success');
     }
@@ -983,7 +983,7 @@ async function saveFabric() {
 async function deleteFabric(id) {
   if (!confirm(`确定要删除布料 ${id} 吗？`)) return;
   try {
-    const { error } = await supabase.from('fabrics').delete().eq('id', id);
+    const { error } = await supabaseClient.from('fabrics').delete().eq('id', id);
     if (error) throw error;
     showToast('已删除', 'success');
     await loadFabrics();
