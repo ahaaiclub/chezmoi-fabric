@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chez Moi · 布料库</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --primary: #6B4C8A;
+    --primary-light: #9B7DB8;
+    --primary-dark: #4A2D6B;
+    --accent: #D4A574;
+    --bg: #FAF6F1;
+    --bg-card: #FFFFFF;
+    --text: #3D2C2C;
+    --text-light: #8B7676;
+    --text-muted: #B5A3A3;
+    --border: #E8DDD4;
+  }
+  
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    padding: 20px 24px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.3;
+  }
+  .brand {
+    position: relative;
+    z-index: 1;
+  }
+  .brand-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 3px;
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .fabric-id {
+    position: absolute;
+    right: 24px;
+    top: 24px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    z-index: 1;
+  }
+
+  /* Image Gallery */
+  .gallery {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+  .gallery img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .gallery-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+  }
+  .gallery-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+  }
+  .gallery-dots span.active {
+    background: #fff;
+    width: 18px;
+    border-radius: 3px;
+  }
+  .img-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #D4A574 0%, #C49464 30%, #6B4C8A 70%, #4A2D6B 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+  }
+  .img-placeholder .weave-pattern {
+    font-size: 48px;
+    margin-bottom: 8px;
+    opacity: 0.4;
+  }
+
+  /* Content */
+  .content {
+    padding: 24px;
+  }
+  
+  .fabric-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: 4px;
+  }
+  .fabric-origin {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 20px;
+  }
+  .fabric-origin span {
+    color: var(--primary);
+  }
+  
+  /* Tags */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .tag {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-material {
+    background: rgba(107, 76, 138, 0.1);
+    color: var(--primary);
+  }
+  .tag-pattern {
+    background: rgba(212, 165, 116, 0.2);
+    color: #8B6914;
+  }
+  .tag-status {
+    background: rgba(76, 138, 87, 0.1);
+    color: #4C8A57;
+  }
+
+  /* Info Card */
+  .info-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .info-card-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-card-title::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .info-item.full {
+    grid-column: 1 / -1;
+  }
+  .info-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .info-value {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* Story */
+  .story {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .story p {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  /* Suitable */
+  .suitable-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .suitable-tag {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(107,76,138,0.06), rgba(212,165,116,0.1));
+    border: 1px solid rgba(107,76,138,0.1);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* Contact */
+  .contact-section {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    color: #fff;
+    text-align: center;
+  }
+  .contact-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  .contact-sub {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+  }
+  .contact-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .contact-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: transform 0.2s;
+  }
+  .contact-btn:active {
+    transform: scale(0.96);
+  }
+  .btn-wechat {
+    background: rgba(255,255,255,0.95);
+    color: var(--primary-dark);
+  }
+  .btn-xhs {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .footer .brand-footer {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    color: var(--primary-light);
+    margin-bottom: 4px;
+  }
+
+  /* Version Badge */
+  .version-badge {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    background: var(--primary);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(107,76,138,0.4);
+  }
+
+  /* Care icons */
+  .care-icons {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .care-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(107,76,138,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="version-badge">方案 A · 紫韵</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-name">Chez Moi</div>
+    <div class="brand-sub">手织老土布 · 布料库</div>
+  </div>
+  <div class="fabric-id"># BL-027</div>
+</div>
+
+<!-- Image -->
+<div class="gallery">
+  <div class="img-placeholder">
+    <div class="weave-pattern">⬚⬚⬚<br>⬚⬚⬚<br>⬚⬚⬚</div>
+    布料实拍图
+  </div>
+  <div class="gallery-dots">
+    <span class="active"></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <h1 class="fabric-name">靛蓝方格纹</h1>
+  <div class="fabric-origin">产地 · <span>山东菏泽</span> · 非遗传承人手织</div>
+  
+  <div class="tags">
+    <span class="tag tag-material">纯棉</span>
+    <span class="tag tag-pattern">方格纹</span>
+    <span class="tag tag-status">● 有货</span>
+  </div>
+
+  <!-- Basic Info -->
+  <div class="info-card">
+    <div class="info-card-title">布料信息</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">材质</span>
+        <span class="info-value">100% 手纺纯棉</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">纹样</span>
+        <span class="info-value">经典方格</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">染色</span>
+        <span class="info-value">植物染 · 靛蓝</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">幅宽</span>
+        <span class="info-value">42 cm</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">厚度</span>
+        <span class="info-value">中等偏厚</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">产地</span>
+        <span class="info-value">山东菏泽</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story -->
+  <div class="story">
+    <div class="info-card-title">布的故事</div>
+    <p>这款靛蓝方格布来自山东菏泽的非遗传承人王阿姨之手。从采棉、弹花、纺线到织布，历经七十二道工序，全程手工完成。靛蓝染料取自当地种植的板蓝根，经反复浸染晾晒，色泽沉稳而不失温润。每一寸布面上的细微不规则，都是手工织造的独特印记。</p>
+  </div>
+
+  <!-- Suitable -->
+  <div class="info-card">
+    <div class="info-card-title">适合用途</div>
+    <div class="suitable-tags">
+      <span class="suitable-tag">👘 衣物</span>
+      <span class="suitable-tag">👜 包袋</span>
+      <span class="suitable-tag">🏠 桌布/盖布</span>
+      <span class="suitable-tag">🧸 布艺玩偶</span>
+    </div>
+  </div>
+
+  <!-- Care -->
+  <div class="info-card">
+    <div class="info-card-title">洗护建议</div>
+    <div class="info-grid">
+      <div class="info-item full">
+        <span class="info-value">首次使用前冷水浸泡 30 分钟，可能轻微掉色属正常。建议手洗或轻柔机洗，自然晾干，避免暴晒。植物染色会随时间自然氧化，色泽愈加温润。</span>
+      </div>
+    </div>
+    <div class="care-icons">
+      <div class="care-icon">🫧</div>
+      <div class="care-icon">🌡️</div>
+      <div class="care-icon">☀️</div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="contact-section">
+    <div class="contact-title">喜欢这块布？</div>
+    <div class="contact-sub">定制咨询 · 了解更多</div>
+    <div class="contact-buttons">
+      <a class="contact-btn btn-wechat" href="#">💬 微信咨询</a>
+      <a class="contact-btn btn-xhs" href="#">📕 小红书</a>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="brand-footer">Chez Moi</div>
+  <div>手织老土布 · 每一块都有故事</div>
+</div>
+
+</body>
+</html>
